@@ -1,4 +1,4 @@
-package com.example.mediaplayerapp   // ← Измени на свой реальный пакет!
+package com.example.mediaplayerapp
 
 import android.content.Intent
 import android.os.Bundle
