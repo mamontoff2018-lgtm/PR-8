@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Медиа плеер</string>
+    <string name="slideshow_title">Слайд-шоу</string>
+    <string name="audio_title">Аудиоплеер</string>
+    <string name="video_title">Видеоплеер</string>
+    <string name="play">Play</string>
+    <string name="pause">Pause</string>
+    <string name="stop">Stop</string>
+    <string name="prev">Пред.</string>
+    <string name="next">След.</string>
+    <string name="auto_play">Автовоспроизведение</string>
+    <string name="volume">Громкость:</string>
+    <string name="select_audio">Выберите аудио:</string>
+    <string name="select_video">Выберите видео:</string>
+</resources>
