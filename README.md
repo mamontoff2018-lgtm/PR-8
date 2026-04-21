@@ -174,70 +174,126 @@
 
 ### Ответы на контрольные вопросы
 
-**1. Какие типы ресурсов существуют в Android? Опишите их назначение.**
+**1. Какие типы ресурсов существуют в Android? Для чего предназначены папки drawable, raw, values?**
 
-- `drawable` — графические ресурсы (изображения, иконки)
-- `raw` — сырые файлы в исходном виде (аудио, видео, текстовые файлы)
-- `layout` — XML-файлы разметки экранов
-- `values` — строки, цвета, размеры, стили
-- `mipmap` — иконки приложения для разных плотностей экрана
-- `anim` — анимации
-- `font` — шрифты
+В Android ресурсы хранятся в папке `res/` и делятся на несколько категорий:
+- **drawable/** — графические ресурсы: изображения (PNG, JPG, WEBP), векторные рисунки (XML), фигуры (shape). Поддерживаются квалификаторы плотности экрана (`drawable-hdpi`, `drawable-xhdpi` и т.д.).
+- **raw/** — произвольные файлы в исходном виде: аудио (MP3), видео (MP4), текстовые файлы. Доступ через `R.raw.имя_файла`.
+- **values/** — простые значения: строки (`strings.xml`), цвета (`colors.xml`), размеры (`dimens.xml`), стили (`styles.xml`), массивы (`arrays.xml`). Позволяют легко локализовать приложение и менять оформление без изменения кода.
+- **layout/** — XML-файлы разметки пользовательского интерфейса.
+- **menu/** — описания меню для `Toolbar` или `NavigationView`.
 
-**2. Как добавить изображение в приложение и отобразить его в ImageView?**
+**2. Как добавить изображение в приложение и отобразить его в ImageView двумя способами (из ресурсов и из файловой системы)?**
 
-Изображение копируется в папку `res/drawable/`. В коде установка происходит через:
-```kotlin
-imageView.setImageResource(R.drawable.image_name)
-```
-В XML:
+**Способ 1: Из ресурсов drawable**
+Скопировать изображение в папку `res/drawable`, затем:
 ```xml
-<ImageView android:src="@drawable/image_name" />
+<!-- В XML -->
+<ImageView
+    android:layout_width="200dp"
+    android:layout_height="200dp"
+    android:src="@drawable/my_image" />
+```
+```kotlin
+imageView.setImageResource(R.drawable.my_image)
 ```
 
-**3. Для чего используется класс MediaPlayer? Какие основные методы у него есть?**
-
-`MediaPlayer` — класс для воспроизведения аудио и видео. Основные методы:
-- `create()` — создание из ресурса
-- `start()` — начало воспроизведения
-- `pause()` — пауза
-- `stop()` — остановка
-- `seekTo()` — перемотка
-- `release()` — освобождение ресурсов
-
-**4. В чём разница между MediaPlayer и VideoView?**
-
-- `MediaPlayer` — низкоуровневый класс для работы с аудио/видео, требует самостоятельного управления отображением для видео
-- `VideoView` — высокоуровневый виджет, который объединяет `MediaPlayer` и `SurfaceView`, упрощая воспроизведение видео
-
-**5. Как добавить аудиофайл в ресурсы приложения и воспроизвести его?**
-
-Аудиофайл копируется в папку `res/raw/`. Воспроизведение:
+**Способ 2: Из файловой системы**
+Требует разрешений на чтение хранилища. Используется `BitmapFactory`:
 ```kotlin
-val mediaPlayer = MediaPlayer.create(context, R.raw.audio_name)
+val file = File("/sdcard/Download/my_image.jpg")
+if (file.exists()) {
+    val bitmap = BitmapFactory.decodeFile(file.absolutePath)
+    imageView.setImageBitmap(bitmap)
+}
+```
+Для Android 13+ необходимо запросить разрешение `READ_MEDIA_IMAGES` вместо общего `READ_EXTERNAL_STORAGE`.
+
+**3. Опишите жизненный цикл MediaPlayer. Какие методы необходимо вызвать для воспроизведения аудиофайла из ресурсов?**
+
+Жизненный цикл `MediaPlayer` включает следующие состояния:
+1. **Idle** (бездействие) — после создания `new MediaPlayer()` или `reset()`.
+2. **Initialized** (инициализирован) — после `setDataSource()`.
+3. **Prepared** (подготовлен) — после `prepare()` или `prepareAsync()`. Готов к воспроизведению.
+4. **Started** (воспроизводится) — после `start()`.
+5. **Paused** (пауза) — после `pause()`. Можно возобновить через `start()`.
+6. **Stopped** (остановлен) — после `stop()`. Требуется повторная подготовка.
+7. **End** (завершён) — после `release()`. Плеер больше нельзя использовать.
+
+**Для воспроизведения аудио из ресурсов (res/raw):**
+```kotlin
+val mediaPlayer = MediaPlayer.create(context, R.raw.audio_sample)
 mediaPlayer.start()
 ```
+Метод `create()` автоматически вызывает `setDataSource()` и `prepare()`, поэтому дополнительных вызовов не требуется.
 
-**6. Какие существуют способы управления громкостью в Android?**
+---
 
-- Кнопки громкости на устройстве
-- `AudioManager` для программного управления:
+**4. Для чего используется класс AudioManager? Как получить его экземпляр и изменить громкость?**
+
+`AudioManager` управляет громкостью и аудиорежимами устройства (звонок, мультимедиа, уведомления).
+
+**Получение экземпляра:**
 ```kotlin
-val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
-audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, volume, 0)
+val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
 ```
-- `SeekBar` с привязкой к AudioManager
 
-**7. Как реализовать переключение между несколькими аудиофайлами?**
+**Изменение громкости мультимедиа:**
+```kotlin
+// Получить максимальную громкость
+val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+// Получить текущую громкость
+val currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+// Установить новую громкость (значение от 0 до maxVolume)
+audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, newVolume, 0)
+```
+Флаги в `setStreamVolume()`: `0` — без уведомлений, `FLAG_SHOW_UI` — показать системный ползунок, `FLAG_PLAY_SOUND` — воспроизвести звук изменения громкости.
 
-Используется `Spinner` для выбора файла. При выборе нового элемента:
-- Останавливается текущее воспроизведение
-- Освобождается текущий `MediaPlayer`
-- Создаётся новый `MediaPlayer` с выбранным файлом
+---
 
-**8. Что такое SeekBar и для чего он используется в медиаплеерах?**
+**5. Что такое VideoView и MediaController? Как их использовать для создания простого видеоплеера?**
 
-`SeekBar` — ползунок для выбора значения из диапазона. В медиаплеерах используется для:
-- Отображения прогресса воспроизведения
-- Перемотки (пользователь может переместить ползунок на нужную позицию)
-- Регулировки громкости
+- **VideoView** — виджет, объединяющий `SurfaceView` для отображения видео и `MediaPlayer` для управления воспроизведением. Упрощает работу с видео.
+- **MediaController** — стандартная панель управления с кнопками Play/Pause, перемоткой и ползунком прогресса.
+
+---
+
+**6. Почему при обновлении UI (например, SeekBar) из TimerTask нужно использовать runOnUiThread()?**
+
+`TimerTask` выполняется в **фоновом потоке**, а Android **запрещает изменять UI из любого потока, кроме главного (UI-потока)**. Нарушение этого правила вызывает исключение `CalledFromWrongThreadException`.
+
+`runOnUiThread()` позволяет безопасно выполнить код в главном потоке:
+```kotlin
+Timer().schedule(object : TimerTask() {
+    override fun run() {
+        runOnUiThread {
+            seekBar.progress = mediaPlayer.currentPosition
+        }
+    }
+}, 0, 1000)
+```
+
+---
+
+**7. Как сделать, чтобы аудиофайл воспроизводился бесконечно (зацикливался)?**
+
+Используется метод `setLooping(true)` объекта `MediaPlayer`:
+```kotlin
+val mediaPlayer = MediaPlayer.create(this, R.raw.audio_sample)
+mediaPlayer.setLooping(true)
+mediaPlayer.start()
+```
+После окончания воспроизведения файл автоматически начнётся заново.
+
+---
+
+**8. Какие разрешения необходимы для доступа к медиафайлам на внешнем хранилище в разных версиях Android?**
+
+| Версия Android | Разрешение | Примечание |
+|----------------|------------|------------|
+| **До Android 10 (API 29)** | `READ_EXTERNAL_STORAGE` | Общее разрешение на чтение всего внешнего хранилища. |
+| **Android 10 (API 29)** | `READ_EXTERNAL_STORAGE` | Работает с устаревшим поведением (`requestLegacyExternalStorage`). |
+| **Android 11-12 (API 30-32)** | `READ_EXTERNAL_STORAGE` | Доступ только к медиафайлам через `MediaStore` API. |
+| **Android 13+ (API 33+)** | `READ_MEDIA_IMAGES`, `READ_MEDIA_VIDEO`, `READ_MEDIA_AUDIO` | Гранулярные разрешения для каждого типа медиа. |
+
+Для **записи** файлов на внешнее хранилище требуется `WRITE_EXTERNAL_STORAGE` (до API 29), но в современных версиях рекомендуется использовать `MediaStore` API или `Storage Access Framework` без специальных разрешений.
